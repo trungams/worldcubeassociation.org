@@ -1,0 +1,9 @@
+<h1>
+  <%= @user_senior_delegate.name %> has changed the Delegate status of <%= @user_whose_delegate_status_changes.name %> from <%= @user_whose_delegate_status_changes.delegate_status_was_name %> to <%= @user_whose_delegate_status_changes.delegate_status_name %>.
+</h1>
+<% if @user_senior_delegate.name != @user_whose_delegate_status_changes.senior_delegate.name %>
+  <h2 class="alert">Warning: <%= @user_senior_delegate.name %> is not <%= @user_whose_delegate_status_changes.name %>'s Senior Delegate.</h2>
+  <% end %>
+<p>
+  You can see additional information or make changes in the <%= link_to "Edit User", edit_user_url(@user_whose_delegate_status_changes) %> page.
+</p>

@@ -606,6 +606,11 @@ RSpec.describe User, type: :model do
       normal_user = FactoryBot.create :user
       expect(normal_user.can_edit_user?(user)).to eq false
     end
+
+    it "returns true for senior delegate" do
+      senior_delegate = FactoryBot.create :senior_delegate
+      expect(senior_delegate.can_edit_user?(user)).to eq true
+    end
   end
 
   describe "#editable_fields_of_user" do
@@ -616,6 +621,29 @@ RSpec.describe User, type: :model do
       organizer = competition.organizers.first
       expect(organizer.can_edit_user?(registration.user)).to eq true
       expect(organizer.editable_fields_of_user(registration.user).to_a).to eq [:name]
+    end
+
+    context "when the delegate status of a user is changed" do
+      let(:delegate) { FactoryBot.create(:delegate) }
+
+      it "notifies the board and the wqac via email" do
+        expect(DelegateStatusChangeMailer).to receive(:notify_board_and_wqac_of_delegate_status_change).with(delegate, delegate.senior_delegate).and_call_original
+        delegate.update!(delegate_status: "")
+        expect(delegate.reload.delegate_status).to eq nil
+      end
+    end
+  end
+
+  describe "delegate_status_name" do
+    it "returns the name associated to the delegate_status" do
+      delegate = FactoryBot.create(:delegate, delegate_status: "candidate_delegate")
+      expect(delegate.delegate_status_name).to eq "Candidate Delegate"
+
+      delegate = FactoryBot.create(:delegate, delegate_status: "delegate")
+      expect(delegate.delegate_status_name).to eq "Delegate"
+
+      delegate = FactoryBot.create(:delegate, delegate_status: "senior_delegate")
+      expect(delegate.delegate_status_name).to eq "Senior Delegate"
     end
   end
 end

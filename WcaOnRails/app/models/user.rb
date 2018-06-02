@@ -327,6 +327,34 @@ class User < ApplicationRecord
     end
   end
 
+  after_save :changed_delegate_status
+  private def changed_delegate_status
+    user = User.find_by_wca_id(wca_id)
+    if saved_change_to_delegate_status? && !delegate_status
+      senior_delegate = User.find_by_id(senior_delegate_id_before_last_save)
+      DelegateStatusChangeMailer.notify_board_and_wqac_of_delegate_status_change(user, senior_delegate).deliver_later
+    elsif saved_change_to_delegate_status? && delegate_status
+      senior_delegate = user.senior_delegate
+      DelegateStatusChangeMailer.notify_board_and_wqac_of_delegate_status_change(user, senior_delegate).deliver_later
+    end
+  end
+
+  def delegate_status_name
+    return "Candidate Delegate" if delegate_status == "candidate_delegate"
+
+    return "Delegate" if delegate_status == "delegate"
+
+    return "Senior Delegate" if delegate_status == "senior_delegate"
+  end
+
+  def delegate_status_was_name
+    return "Candidate Delegate" if delegate_status_was == "candidate_delegate"
+
+    return "Delegate" if delegate_status_was == "delegate"
+
+    return "Senior Delegate" if delegate_status_was == "senior_delegate"
+  end
+
   # After the user confirms their account, if they claimed a WCA ID, now is the
   # time to notify their delegate!
   def after_confirmation
@@ -596,7 +624,7 @@ class User < ApplicationRecord
       )
       fields << { user_preferred_events_attributes: [:id, :event_id, :_destroy] }
     end
-    if admin? || board_member?
+    if admin? || board_member? || senior_delegate?
       fields += %i(delegate_status senior_delegate_id region)
     end
     if user.any_kind_of_delegate?
